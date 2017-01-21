@@ -1,0 +1,16 @@
+{
+  "name": "pushers",
+  "version": "0.0.0",
+  "description": "Pushers",
+  "main": "server.js",
+  "author": {
+    "name": "Aaron"
+  },
+  "dependencies": {
+    "express": "^4.14.0",
+    "path": "^0.12.7",
+    "requirejs": "^2.3.2",
+    "socket.io": "^1.7.2",
+    "underscore": "^1.8.3"
+  }
+}
