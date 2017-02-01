@@ -49,16 +49,22 @@ export class Client {
         });
     }
 
+    rollPhase() {
+    }
+
     mainPhase() {
         var self = this;
 
-        self.Socket.on(self.s.SendGameData, function (gameJson: string) {
-            var game: Game.PlayerGameData = JSON.parse(gameJson);
+        self.Socket.on(self.s.SendGameData, function (playerGameDataJson: string) {
+            var game: Game.PlayerGameData = JSON.parse(playerGameDataJson);
             self.Ui.setGameInstance(self, game, self.onServerAction);
             self.Ui.mainPhaseMenu();
         });
 
         self.Socket.emit(self.s.RequestGameData);
+    }
+
+    attackPhase() {
     }
 
     onServerAction(action: Game.ServerAction, callback: (success: boolean) => void) {

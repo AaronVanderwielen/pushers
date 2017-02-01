@@ -32,13 +32,20 @@ define(["require", "exports", './gameServer'], function (require, exports, Game)
             this.PlayerGameData = game;
             this.OnServerAction = onServerAction.bind(client);
         };
+        Ui.prototype.gameMenu = function () {
+            var self = this, options = [
+                new MenuOption('Resume', self.mainPhaseMenu.bind(self)),
+                new MenuOption('Quit', window.close)
+            ];
+            this.runMenu('Main Menu', options);
+        };
         // allow players to set up routes, plan moves, attacks, change prices, hire, start operations, end turn
         Ui.prototype.mainPhaseMenu = function () {
             var self = this, header = 'Turn: ' + self.PlayerGameData.Turn + '\n', options = [
                 new MenuOption('City Management', self.citySelectionMenu.bind(self)),
                 new MenuOption('Manage Supply Routes', self.supplyRouteMenu.bind(self)),
                 new MenuOption('End Turn', self.endTurn.bind(self))
-            ], labelGetter = function (val) { return val.MenuLabel; };
+            ];
             this.runMenu(header + 'Choose Action: ', options);
         };
         Ui.prototype.endTurn = function () {

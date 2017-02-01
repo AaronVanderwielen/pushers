@@ -32,8 +32,8 @@ define(["require", "exports", './gameLib', './ui'], function (require, exports, 
         };
         Client.prototype.mainPhase = function () {
             var self = this;
-            self.Socket.on(self.s.SendGameData, function (gameJson) {
-                var game = JSON.parse(gameJson);
+            self.Socket.on(self.s.SendGameData, function (playerGameDataJson) {
+                var game = JSON.parse(playerGameDataJson);
                 self.Ui.setGameInstance(self, game, self.onServerAction);
                 self.Ui.mainPhaseMenu();
             });

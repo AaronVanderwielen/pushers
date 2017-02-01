@@ -17,6 +17,8 @@ define(["require", "exports"], function (require, exports) {
             this.ClientReady = 'clientReady-' + gameId;
             this.ChooseStart = 'chooseStart-' + gameId;
             this.StartChosen = 'startChosen-' + gameId;
+            this.SendEvents = 'sendEvents-' + gameId;
+            this.ReadAllEvents = 'readAllEvents-' + gameId;
             this.BeginMainPhase = 'beginMainPhase-' + gameId;
             this.ServerAction = 'mainPhaseAction-' + gameId;
             this.ActionProcessed = 'actionProcessed-' + gameId;

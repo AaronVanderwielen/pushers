@@ -44,6 +44,16 @@ export class Ui {
         this.OnServerAction = onServerAction.bind(client);
     }
 
+    gameMenu() {
+        var self = this,
+            options: MenuOption[] = [
+                new MenuOption('Resume', self.mainPhaseMenu.bind(self)),
+                new MenuOption('Quit', window.close)
+            ];
+
+        this.runMenu('Main Menu', options);
+    }
+
     // allow players to set up routes, plan moves, attacks, change prices, hire, start operations, end turn
     mainPhaseMenu() {
         var self = this,
@@ -52,8 +62,7 @@ export class Ui {
                 new MenuOption('City Management', self.citySelectionMenu.bind(self)),
                 new MenuOption('Manage Supply Routes', self.supplyRouteMenu.bind(self)),
                 new MenuOption('End Turn', self.endTurn.bind(self))
-            ],
-            labelGetter = function (val: MenuOption) { return val.MenuLabel; };
+            ];
 
         this.runMenu(header + 'Choose Action: ', options);
     }

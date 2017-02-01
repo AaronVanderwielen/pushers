@@ -185,7 +185,7 @@ export class GameInstance {
 
                 if (playersChosenStarting == self.Players.length) {
                     self.GamePhase = Lib.GamePhase.Playing;
-                    self.startRollPhase();
+                    self.startPhase(Lib.TurnPhase.Roll);
                 }
             });
 
@@ -193,53 +193,19 @@ export class GameInstance {
         }
     }
 
-    startRollPhase() {
+    startPhase(phase: Lib.TurnPhase) {
         var self = this;
         self.clearAllSocketListeners();
 
-        this.TurnPhase = Lib.TurnPhase.Roll;
-        this.Turn++;
+        this.TurnPhase = phase;
+
+        if (phase == Lib.TurnPhase.Roll {
+            this.Turn++;
+        }
 
         for (var p in this.Players) {
             this.Players[p].setupPhase();
         }
-
-        // risk roll for each city
-        // on success risk, roll for severity
-        // reward roll for each city
-        // on success reward, roll for severity
-
-        // if reward + risk, choose one, 50-50
-        // translate risk/reward to event, apply
-
-        self.startMainPhase();
-    }
-
-    startMainPhase() {
-        var self = this;
-        self.clearAllSocketListeners();
-
-        self.TurnPhase = Lib.TurnPhase.Main;
-
-        for (var p in self.Players) {
-            // allow players to set up routes, plan moves, attacks, change prices, hire, start operations
-            self.Players[p].setupPhase();
-        }
-    }
-
-    startAttackPhase() {
-        var self = this;
-        self.clearAllSocketListeners();
-
-        this.TurnPhase = Lib.TurnPhase.Attack;
-
-        for (var p in this.Players) {
-            this.Players[p].setupPhase();
-        }
-
-        // if any attacks queued, simulate them
-
-        self.startRollPhase();
     }
 }
 
@@ -264,9 +230,9 @@ export interface IAction {
 
 export class ClientAction implements IAction {
     MenuLabel: string;
-    Callback: (gameJson: string, onServerAction: (action: ServerActionType, callback: (success: boolean) => void) => void) => void;
+    Callback: Function;
 
-    constructor(menuLabel: string, callback: (gameJson: string, onServerAction: (action: ServerActionType, callback: (success: boolean) => void) => void) => void) {
+    constructor(menuLabel: string, callback: Function) {
         this.MenuLabel = menuLabel;
         this.Callback = callback;
     }

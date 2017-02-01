@@ -147,12 +147,6 @@ define(["require", "exports", "underscore", './gameLib', './player', './city'], 
             for (var p in this.Players) {
                 this.Players[p].setupPhase();
             }
-            // risk roll for each city
-            // on success risk, roll for severity
-            // reward roll for each city
-            // on success reward, roll for severity
-            // if reward + risk, choose one, 50-50
-            // translate risk/reward to event, apply
             self.startMainPhase();
         };
         GameInstance.prototype.startMainPhase = function () {
