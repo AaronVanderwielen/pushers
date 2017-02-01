@@ -1,4 +1,4 @@
-﻿import Manager = require('./manager');
+﻿import Lib = require('./gameLib');
 
 export class Input {
 
@@ -8,12 +8,12 @@ export class Input {
     clear() {
     }
 
-    bindControls(phase: Manager.Phase) {
+    bindControls(phase: Lib.TurnPhase) {
         this.clear();
 
-        if (phase == Manager.Phase.Roll) this.setupRollPhaseInput();
-        if (phase == Manager.Phase.Main) this.setupMainPhaseInput();
-        if (phase == Manager.Phase.Attack) this.setupAttackPhaseInput();
+        if (phase == Lib.TurnPhase.Roll) this.setupRollPhaseInput();
+        if (phase == Lib.TurnPhase.Main) this.setupMainPhaseInput();
+        if (phase == Lib.TurnPhase.Attack) this.setupAttackPhaseInput();
     }
 
     setupRollPhaseInput() {

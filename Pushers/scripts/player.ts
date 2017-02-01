@@ -1,10 +1,12 @@
 ﻿import Lib = require('./gameLib');
-import Input = require('./input');
+import Game = require('./gameServer');
+import City = require('./city');
 
 export class Player {
-    Input: Input.Input;
     Account: string;
-    SocketId: string;
+    Socket: SocketIO.Socket;
+    GameInstance: Game.GameInstance;
+    s: Lib.SocketListeners;
     // game variables
     public BaseIncome = 50;
     TurnEnded: boolean; 
@@ -13,11 +15,11 @@ export class Player {
     Muscle: number;
     Snitches: number;
     Operations: number;
-    endTurnCallback: Function;
+    MyCities: City.PlayerCityData[];
 
-    constructor(loginInfo: string, socketId: string) {
+    constructor(loginInfo: string, socket: SocketIO.Socket) {
         this.Account = loginInfo;
-        this.SocketId = socketId;
+        this.Socket = socket;
 
         this.TurnEnded = false;
         this.Money = 0;
@@ -27,12 +29,42 @@ export class Player {
         this.Operations = 0;
     }
 
-    endTurn() {
-        if (this.endTurnCallback) this.endTurnCallback(this);
+    initGameInstance(game: Game.GameInstance) {
+        this.GameInstance = game;
+        this.s = new Lib.SocketListeners(game.Id);
     }
 
-    setupInput(phase: Lib.TurnPhase) {
-        if (this.Input) this.Input.clear();
-        this.Input = new Input.Input();
+    clearAllSocketListeners() {
+        this.Socket.removeAllListeners();
+    }
+
+    setupPhase() {
+        var self = this;
+
+        self.clearAllSocketListeners();
+
+        if (self.GameInstance.TurnPhase == Lib.TurnPhase.Main) {
+            self.Socket.on(self.s.ServerAction, function (action: Game.ServerAction) {
+                self.mainPhaseAction(action);
+            });
+            self.Socket.emit(self.s.BeginMainPhase);
+        }
+
+        self.Socket.on(self.s.RequestGameData, function () {
+            self.Socket.emit(self.s.SendGameData, self.GameInstance.toPlayerData(self.Account));
+        });
+    }
+
+    mainPhaseAction(action: Game.ServerAction) {
+        var self = this;
+
+        if (action.Type == Game.ServerActionType.EndTurn) {
+            self.TurnEnded = true;
+            self.Socket.emit(self.s.ActionProcessed, true);
+
+            if (self.GameInstance.allPlayerTurnsEnded()) {
+                self.GameInstance.startAttackPhase();
+            }
+        }
     }
 }

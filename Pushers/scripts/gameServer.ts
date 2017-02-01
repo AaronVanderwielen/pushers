@@ -16,15 +16,15 @@ export class ServerInstance {
 
         socket.on(Lib.SocketListeners.LoginInfo, function (info: string) {
             var game: GameInstance = self.findGame(info),
-                player: Player.Player = self.login(info, socket.id, game);
+                player: Player.Player = self.login(info, socket, game);
 
             if (player) {
-                var gameState = game.getState();
-                gameState['Player'] = player;
-
-                if (gameState.GamePhase == null) {
-                    game.startGame();
-                }
+                player.Socket.on(game.s.ClientReady, function () {
+                    if (game.GamePhase == null) {
+                        game.startGame();
+                    }
+                });
+                player.Socket.emit(Lib.SocketListeners.Authenticated, game.Id);
             }
         });
 
@@ -54,7 +54,7 @@ export class ServerInstance {
         }
     }
 
-    login(loginInfo: string, socketId: string, game: GameInstance) {
+    login(loginInfo: string, socket: SocketIO.Socket, game: GameInstance) {
         // check if player exists in this game
         var player: Player.Player = _.find(game.Players, function (p: Player.Player) {
             return p.Account == loginInfo;
@@ -62,12 +62,12 @@ export class ServerInstance {
 
         if (player) {
             // they are in this game, reset socketid
-            player.SocketId = socketId;
+            player.Socket = socket;
             return player;
         }
         else {
             // not part of game, add player
-            var player = new Player.Player(loginInfo, socketId);
+            var player = new Player.Player(loginInfo, socket);
 
             game.addPlayer(player);
             return player;
@@ -94,6 +94,11 @@ export class GameInstance {
         this.s = new Lib.SocketListeners(this.Id);
         this.setupCities();
         this.Turn = 0;
+    }
+
+    toPlayerData(account: string) {
+        var playerData = new PlayerGameData(this, account);
+        return JSON.stringify(playerData);
     }
 
     setupCities() {
@@ -144,19 +149,26 @@ export class GameInstance {
         var self = this;
 
         player.Money = 200;
-        player.endTurnCallback = this.playerEndTurn;
-
-        this.Players.push(player);
+        player.initGameInstance(self);
+        self.Players.push(player);
     }
 
-    playerEndTurn(player: Player.Player) {
-        if (this.GamePhase == Lib.GamePhase.Playing) {
-            if (_.all(this.Players, function (p: Player.Player) { return p.TurnEnded; })) {
-                if (this.TurnPhase == Lib.TurnPhase.Roll) this.startMainPhase();
-                if (this.TurnPhase == Lib.TurnPhase.Main) this.startAttackPhase();
-                if (this.TurnPhase == Lib.TurnPhase.Attack) this.startRollPhase();
-            }
+    allPlayerTurnsEnded() {
+        return _.all(this.Players, function (p: Player.Player) {
+            return p.TurnEnded;
+        });
+    }
+
+    clearAllSocketListeners() {
+        for (var p in this.Players) {
+            var socket = this.Players[p].Socket;
+            socket.removeAllListeners();
         }
+    }
+
+    getSocket(id: string) {
+        var socket: SocketIO.Socket = this.io.server.sockets.connected[id];
+        return socket;
     }
 
     startGame() {
@@ -168,9 +180,7 @@ export class GameInstance {
             cityNames = _.map(self.Cities, function (c: City.City) { return c.Name; });
 
         for (var p in this.Players) {
-            var socket = self.getSocket(this.Players[p].SocketId);
-
-            socket.once(this.s.StartChosen, function (cityName: string) {
+            this.Players[p].Socket.once(this.s.StartChosen, function (cityName: string) {
                 playersChosenStarting++;
 
                 if (playersChosenStarting == self.Players.length) {
@@ -179,20 +189,8 @@ export class GameInstance {
                 }
             });
 
-            socket.emit(this.s.ChooseStart, cityNames);
+            this.Players[p].Socket.emit(this.s.ChooseStart, cityNames);
         }
-    }
-
-    clearAllSocketListeners() {
-        for (var p in this.Players) {
-            var socket = this.getSocket(this.Players[p].SocketId);
-            socket.removeAllListeners();
-        }
-    }
-
-    getSocket(id: string) {
-        var socket: SocketIO.Socket = this.io.server.sockets.connected[id];
-        return socket;
     }
 
     startRollPhase() {
@@ -203,7 +201,7 @@ export class GameInstance {
         this.Turn++;
 
         for (var p in this.Players) {
-            this.Players[p].setupInput(this.TurnPhase);
+            this.Players[p].setupPhase();
         }
 
         // risk roll for each city
@@ -214,22 +212,19 @@ export class GameInstance {
         // if reward + risk, choose one, 50-50
         // translate risk/reward to event, apply
 
-        //self.startMainPhase();
+        self.startMainPhase();
     }
 
     startMainPhase() {
         var self = this;
         self.clearAllSocketListeners();
 
-        this.TurnPhase = Lib.TurnPhase.Main;
+        self.TurnPhase = Lib.TurnPhase.Main;
 
-        for (var p in this.Players) {
-            this.Players[p].setupInput(this.TurnPhase);
+        for (var p in self.Players) {
+            // allow players to set up routes, plan moves, attacks, change prices, hire, start operations
+            self.Players[p].setupPhase();
         }
-
-        // allow players to set up routes, plan moves, attacks, change prices, hire, start operations
-
-        //self.startAttackPhase();
     }
 
     startAttackPhase() {
@@ -239,18 +234,52 @@ export class GameInstance {
         this.TurnPhase = Lib.TurnPhase.Attack;
 
         for (var p in this.Players) {
-            this.Players[p].setupInput(this.TurnPhase);
+            this.Players[p].setupPhase();
         }
 
         // if any attacks queued, simulate them
 
-        //self.startRollPhase();
+        self.startRollPhase();
     }
+}
 
-    getState() {
-        return {
-            GamePhase: this.TurnPhase,
-            TurnPhase: this.TurnPhase
-        }
+export class PlayerGameData {
+    Player: Player.Player;
+    Cities: City.City[];
+    MyCities: City.PlayerCityData;
+    Turn: number;
+
+    constructor(game: GameInstance, playerId) {
+        this.Player = _.find(game.Players, function (p: Player.Player) {
+            return p.Account == playerId;
+        });
+
+        this.Cities = game.Cities;
+        this.Turn = game.Turn;
     }
+}
+
+export interface IAction {
+}
+
+export class ClientAction implements IAction {
+    MenuLabel: string;
+    Callback: (gameJson: string, onServerAction: (action: ServerActionType, callback: (success: boolean) => void) => void) => void;
+
+    constructor(menuLabel: string, callback: (gameJson: string, onServerAction: (action: ServerActionType, callback: (success: boolean) => void) => void) => void) {
+        this.MenuLabel = menuLabel;
+        this.Callback = callback;
+    }
+}
+
+export class ServerAction implements IAction {
+    Type: ServerActionType;
+
+    constructor(type: ServerActionType) {
+        this.Type = type;
+    }
+}
+
+export enum ServerActionType {
+    EndTurn
 }

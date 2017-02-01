@@ -1,5 +1,5 @@
 require.config({
-    baseUrl: '/js',
+    baseUrl: '/scripts',
     shim: {
         jquery: {
             exports: '$'
@@ -22,7 +22,7 @@ require.config({
     }
 });
 
-requirejs(['jquery', 'underscore', 'socketio', 'client', 'manager', 'player', 'ui', 'connect', 'input'],
-    function (jquery, underscore, socketio, Client, Manager, Player, Ui, Connect, Input) {
-        Client.Client(socketio);
+requirejs(['jquery', 'underscore', 'socketio', 'client', 'gameServer', 'player', 'ui'],
+    function (jquery, underscore, socketio, Client, GameServer, Player, Ui) {
+        var client = new Client.Client(socketio);
     });

@@ -3,7 +3,7 @@
 export class City {
     Name: string;
     Size: Size;
-    Neighbors: City[];
+    Neighbors: string[];
 
     constructor(name: string, size: Size) {
         this.Name = name;
@@ -12,13 +12,16 @@ export class City {
     }
 
     addNeighbor(city: City) {
-        if (!_.any(this.Neighbors, function (n: City) { return n.Name == city.Name; })) {
-            this.Neighbors.push(city);
+        if (!_.any(this.Neighbors, function (s: string) { return s == city.Name; })) {
+            this.Neighbors.push(city.Name);
             city.addNeighbor(this);
         }
 
         return this;
     }
+}
+
+export class PlayerCityData {
 }
 
 export enum Size {

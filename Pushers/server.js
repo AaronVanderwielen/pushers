@@ -10,7 +10,7 @@ requirejs.config({
 });
 
 requirejs(['underscore', './scripts/gameServer'],
-    function (_, Connect) {
+    function (_, GameServer) {
         var port = process.env.port || 1337,
             app = express(),
             server = http.Server(app),
@@ -23,11 +23,11 @@ requirejs(['underscore', './scripts/gameServer'],
 
             socket.on('disconnect', function () {
                 console.log("socket disconnect");
-                game.disconnection(socket);
+                gameServer.disconnection(socket);
             });
 
             // find or start session
-            game.connection(socket);
+            gameServer.connection(socket);
         });
 
         // routing
